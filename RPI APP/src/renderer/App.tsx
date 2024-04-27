@@ -1,50 +1,87 @@
-import { MemoryRouter as Router, Routes, Route } from 'react-router-dom';
-import icon from '../../assets/icon.svg';
-import './App.css';
+/* eslint-disable default-case */
+// @ts-ignore
+import { createBrowserRouter, useNavigate } from 'react-router-dom';
+import {
+  Button,
+  Card,
+  CardActions,
+  CardContent,
+  CardMedia,
+  Grid,
+  Paper,
+  Typography,
+} from '@mui/material';
+import { WOF } from './WOF';
+// @ts-ignore
+import background2 from '../../assets/Backgounds/modern.jpeg';
+import { useEffect } from 'react';
 
-function Hello() {
+export function Home() {
+  const navigate = useNavigate();
+
   return (
-    <div>
-      <div className="Hello">
-        <img width="200" alt="icon" src={icon} />
+    <Paper
+      style={{
+        height: 'calc(100vh - 20px)',
+      }}
+    >
+      <div
+        style={{
+          justifyContent: 'center',
+          alignItems: 'center',
+          display: 'flex',
+        }}
+      >
+        <Typography variant="h2">Games</Typography>
       </div>
-      <h1>electron-react-boilerplate</h1>
-      <div className="Hello">
-        <a
-          href="https://electron-react-boilerplate.js.org/"
-          target="_blank"
-          rel="noreferrer"
-        >
-          <button type="button">
-            <span role="img" aria-label="books">
-              📚
-            </span>
-            Read our docs
-          </button>
-        </a>
-        <a
-          href="https://github.com/sponsors/electron-react-boilerplate"
-          target="_blank"
-          rel="noreferrer"
-        >
-          <button type="button">
-            <span role="img" aria-label="folded hands">
-              🙏
-            </span>
-            Donate
-          </button>
-        </a>
-      </div>
-    </div>
+      <Grid container>
+        <Grid item xs={4}>
+          <Card>
+            <CardMedia
+              sx={{ height: 300 }}
+              image={background2}
+              title="green iguana"
+            />
+            <CardContent>
+              <Typography gutterBottom variant="h5" component="div">
+                Wheel of Fortune
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                2-4 players, 1 Host
+              </Typography>
+            </CardContent>
+            <CardActions>
+              <Button size="small">Options</Button>
+              <Button
+                size="small"
+                onClick={() => {
+                  //scan for ble devices
+
+                  navigator.bluetooth.requestLEScan({
+                    filters: [],
+                    keepRepeatedDevices: true,
+                  });
+                  navigator.bluetooth.onadvertisementreceived = (event) => {
+                    console.log(event);
+                  };
+                }}
+              >
+                scan
+              </Button>
+            </CardActions>
+          </Card>
+        </Grid>
+      </Grid>
+    </Paper>
   );
 }
-
-export default function App() {
-  return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Hello />} />
-      </Routes>
-    </Router>
-  );
-}
+export const router = createBrowserRouter([
+  {
+    path: '/',
+    element: <Home />,
+  },
+  {
+    path: 'about',
+    element: <WOF />,
+  },
+]);

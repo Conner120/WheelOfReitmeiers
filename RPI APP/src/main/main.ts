@@ -12,9 +12,12 @@ import path from 'path';
 import { app, BrowserWindow, shell, ipcMain } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
+import { PrismaClient } from '@prisma/client';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
+import noble from '@abandonware/noble';
 
+const prisma = new PrismaClient();
 class AppUpdater {
   constructor() {
     log.transports.file.level = 'info';
@@ -30,7 +33,40 @@ ipcMain.on('ipc-example', async (event, arg) => {
   console.log(msgTemplate(arg));
   event.reply('ipc-example', msgTemplate('pong'));
 });
+ipcMain.on('getPuzzle', async (event, arg) => {
+  noble.on('stateChange', async (state) => {
+    if (state === 'poweredOn') {
+      await noble.startScanningAsync(['180f'], false);
+    }
+  });
 
+  noble.on('discover', async (peripheral) => {
+    await noble.stopScanningAsync();
+    await peripheral.connectAsync();
+    const { characteristics } =
+      await peripheral.discoverSomeServicesAndCharacteristicsAsync(
+        ['180f'],
+        ['2a19'],
+      );
+    const batteryLevel = (await characteristics[0].readAsync())[0];
+
+    console.log(
+      `${peripheral.address} (${peripheral.advertisement.localName}): ${batteryLevel}%`,
+    );
+
+    await peripheral.disconnectAsync();
+    process.exit(0);
+  });
+  const puzzleCound = await prisma.wOFPuzzle.count();
+  const randomPuzzle = Math.floor(Math.random() * puzzleCound);
+  const puzzle = await prisma.wOFPuzzle.findFirst({
+    where: {
+      id: randomPuzzle,
+    },
+  });
+  console.log(puzzle);
+  event.reply('getPuzzle', puzzle);
+});
 if (process.env.NODE_ENV === 'production') {
   const sourceMapSupport = require('source-map-support');
   sourceMapSupport.install();
@@ -68,11 +104,12 @@ const createWindow = async () => {
   const getAssetPath = (...paths: string[]): string => {
     return path.join(RESOURCES_PATH, ...paths);
   };
-
+  const resolutionMultiplier = 2;
   mainWindow = new BrowserWindow({
     show: false,
-    width: 1024,
-    height: 728,
+    width: 800 * resolutionMultiplier,
+    resizable: false,
+    height: 480 * resolutionMultiplier,
     icon: getAssetPath('icon.png'),
     webPreferences: {
       preload: app.isPackaged
@@ -81,7 +118,7 @@ const createWindow = async () => {
     },
   });
 
-  mainWindow.loadURL(resolveHtmlPath('index.html'));
+  mainWindow.loadURL(resolveHtmlPath('/'));
 
   mainWindow.on('ready-to-show', () => {
     if (!mainWindow) {
