@@ -5,14 +5,12 @@ import { BleManager } from "react-native-ble-plx";
 const bleManager = new BleManager();
 export default function App() {
   useEffect(() => {
-    let counter = 0;
-    bleManager.startDeviceScan(["FF00"], null, (error, device) => {
+    bleManager.startDeviceScan(["FFFF"], null, (error, device) => {
       if (error) {
         console.log("error", error);
         return;
       }
-      counter++;
-      console.log("device count", counter);
+      console.log("device", device.localName);
     });
     return () => {
       bleManager.stopDeviceScan();

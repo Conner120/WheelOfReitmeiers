@@ -17,7 +17,7 @@ import { PrismaClient } from '@prisma/client';
 // core
 import noble from '@abandonware/noble';
 // peripheral
-import bleno from 'bleno';
+import bleno from '@abandonware/bleno';
 
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
@@ -145,8 +145,15 @@ app.on('window-all-closed', () => {
 app
   .whenReady()
   .then(() => {
-    bleno.startAdvertising('GreenBoard', ['ffaa'], (error) => {
-      console.log('error', error);
+    bleno.on('stateChange', (state) => {
+      console.log('on -> stateChange: ' + state);
+      if (state === 'poweredOn') {
+        bleno.startAdvertising('GreenBoard', ['ffff'], (error) => {
+          console.error('error', error);
+        });
+      } else {
+        bleno.stopAdvertising();
+      }
     });
     noble.on('stateChange', async (state) => {
       if (state === 'poweredOn') {
