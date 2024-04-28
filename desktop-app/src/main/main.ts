@@ -13,10 +13,14 @@ import { app, BrowserWindow, shell, ipcMain } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import { PrismaClient } from '@prisma/client';
+
+// core
+import noble from '@abandonware/noble';
+// peripheral
+import bleno from 'bleno';
+
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
-import noble from '@abandonware/noble';
-
 const prisma = new PrismaClient();
 class AppUpdater {
   constructor() {
@@ -34,29 +38,6 @@ ipcMain.on('ipc-example', async (event, arg) => {
   event.reply('ipc-example', msgTemplate('pong'));
 });
 ipcMain.on('getPuzzle', async (event, arg) => {
-  noble.on('stateChange', async (state) => {
-    if (state === 'poweredOn') {
-      await noble.startScanningAsync(['180f'], false);
-    }
-  });
-
-  noble.on('discover', async (peripheral) => {
-    await noble.stopScanningAsync();
-    await peripheral.connectAsync();
-    const { characteristics } =
-      await peripheral.discoverSomeServicesAndCharacteristicsAsync(
-        ['180f'],
-        ['2a19'],
-      );
-    const batteryLevel = (await characteristics[0].readAsync())[0];
-
-    console.log(
-      `${peripheral.address} (${peripheral.advertisement.localName}): ${batteryLevel}%`,
-    );
-
-    await peripheral.disconnectAsync();
-    process.exit(0);
-  });
   const puzzleCound = await prisma.wOFPuzzle.count();
   const randomPuzzle = Math.floor(Math.random() * puzzleCound);
   const puzzle = await prisma.wOFPuzzle.findFirst({
@@ -164,11 +145,32 @@ app.on('window-all-closed', () => {
 app
   .whenReady()
   .then(() => {
+    bleno.startAdvertising('GreenBoard', ['ffaa'], (error) => {
+      console.log('error', error);
+    });
+    noble.on('stateChange', async (state) => {
+      if (state === 'poweredOn') {
+        console.log('Scanning for peripherals...');
+        await noble.startScanningAsync([], false);
+      }
+    });
+    noble.on('scanStop', () => {
+      console.log('Scan stopped');
+    });
+    noble.on('discover', async (peripheral) => {
+      if (!peripheral.advertisement.localName) return;
+      console.log(
+        'Discovered peripheral',
+        peripheral.advertisement.localName,
+        peripheral.advertisement.serviceUuids,
+      );
+    });
     createWindow();
     app.on('activate', () => {
       // On macOS it's common to re-create a window in the app when the
       // dock icon is clicked and there are no other windows open.
       if (mainWindow === null) createWindow();
+      console.log('app ready');
     });
   })
   .catch(console.log);

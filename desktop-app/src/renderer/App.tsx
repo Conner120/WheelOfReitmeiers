@@ -55,18 +55,10 @@ export function Home() {
               <Button
                 size="small"
                 onClick={() => {
-                  //scan for ble devices
-
-                  navigator.bluetooth.requestLEScan({
-                    filters: [],
-                    keepRepeatedDevices: true,
-                  });
-                  navigator.bluetooth.onadvertisementreceived = (event) => {
-                    console.log(event);
-                  };
+                  navigate('about');
                 }}
               >
-                scan
+                Play
               </Button>
             </CardActions>
           </Card>
